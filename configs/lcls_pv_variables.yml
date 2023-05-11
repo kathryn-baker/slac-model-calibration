@@ -26,14 +26,14 @@ input_variables:
   QUAD:IN20:121:BCTRL:
     default: -0.001499227120199691
     range:
-      - 0.020999198106589838
       - -0.02098429469554406
+      - 0.020999198106589838
     type: scalar
   QUAD:IN20:122:BCTRL:
     default: -0.0006872989433749197
     range:
-      - 0.020998929132148195
       - -0.020998830517503037
+      - 0.020998929132148195
     type: scalar
   ACCL:IN20:300:L0A_ADES:
     default: 58.0
@@ -62,43 +62,43 @@ input_variables:
   QUAD:IN20:361:BCTRL:
     default: -2.0005920106399526
     range:
-      - -1.0800430432494976
       - -4.318053641915576
+      - -1.0800430432494976
     type: scalar
   QUAD:IN20:371:BCTRL:
     default: 2.0005920106399526
     range:
-      - 4.30967984810423
       - 1.0913525514575348
+      - 4.30967984810423
     type: scalar
   QUAD:IN20:425:BCTRL:
     default: -0.20217600214382594
     range:
-      - -1.080762695815712
       - -7.559759590824369
+      - -1.080762695815712
     type: scalar
   QUAD:IN20:441:BCTRL:
     default: -0.17938799998564897
     range:
-      - 7.559878303179915
       - -1.0782202690353522
+      - 7.559878303179915
     type: scalar
   QUAD:IN20:511:BCTRL:
     default: 2.852171999771826
     range:
-      - 7.5582919025608595
       - -1.0792451325247663
+      - 7.5582919025608595
     type: scalar
   QUAD:IN20:525:BCTRL:
     default: -3.218399988942528
     range:
-      - -1.0800286565992732
       - -7.557932980106783
+      - -1.0800286565992732
     type: scalar
 output_variables:
-  OTRS:IN20:621:XRMS:
+  OTRS:IN20:571:XRMS:
     type: scalar
-  OTRS:IN20:621:YRMS:
+  OTRS:IN20:571:YRMS:
     type: scalar
   sigma_z:
     type: scalar

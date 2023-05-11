@@ -1,6 +1,6 @@
 {
     "pv_to_sim_factor": {
-        "IRIS:LR20:130:CONFG_SEL": 0.3333333,
+        "CAMR:IN20:186:R_DIST": 0.3333333,
         "SOLN:IN20:121:BDES": 0.51427242,
         "QUAD:IN20:121:BDES": -0.476190476,
         "QUAD:IN20:122:BDES": -0.476190476,
@@ -16,14 +16,14 @@
         "QUAD:IN20:525:BDES": -0.925925926,
         "FBCK:BCI0:1:CHRG_S": 1e3,
         "Pulse_length": 1.65,
-        "OTRS:IN20:621:XRMS": 1e-3,
-        "OTRS:IN20:621:YRMS": 1e-3,
+        "OTRS:IN20:571:XRMS": 1e-6,
+        "OTRS:IN20:571:YRMS": 1e-6,
         "sigma_z": 1.0,
         "norm_emit_x": 1.0,
         "norm_emit_y": 1.0
     },
     "pv_unit": {
-        "IRIS:LR20:130:CONFG_SEL": "(mm)",
+        "CAMR:IN20:186:R_DIST": "(mm)",
         "SOLN:IN20:121:BDES": "(kG*m)",
         "QUAD:IN20:121:BDES": "(kG)",
         "QUAD:IN20:122:BDES": "(kG)",
@@ -38,10 +38,12 @@
         "QUAD:IN20:511:BDES": "(kG)",
         "QUAD:IN20:525:BDES": "(kG)",
         "Pulse_length": "(ps)",
-        "FBCK:BCI0:1:CHRG_S": "(pC)"
+        "FBCK:BCI0:1:CHRG_S": "(pC)",
+        "OTRS:IN20:571:XRMS": "µm",
+        "OTRS:IN20:571:YRMS": "µm",
     },
     "pv_name_to_sim_name": {
-        "IRIS:LR20:130:CONFG_SEL": "distgen:r_dist:sigma_xy:value",
+        "CAMR:IN20:186:R_DIST": "distgen:r_dist:sigma_xy:value",
         "SOLN:IN20:121:BDES": "SOL1:solenoid_field_scale",
         "QUAD:IN20:121:BDES": "CQ01:b1_gradient",
         "QUAD:IN20:122:BDES": "SQ01:b1_gradient",
@@ -57,14 +59,14 @@
         "QUAD:IN20:525:BDES": "QE04:b1_gradient",
         "Pulse_length": "distgen:t_dist:length:value",
         "FBCK:BCI0:1:CHRG_S": "distgen:total_charge:value",
-        "OTRS:IN20:621:XRMS": "sigma_x",
-        "OTRS:IN20:621:YRMS": "sigma_y",
+        "OTRS:IN20:571:XRMS": "sigma_x",
+        "OTRS:IN20:571:YRMS": "sigma_y",
         "sigma_z": "sigma_z",
         "norm_emit_x": "norm_emit_x",
         "norm_emit_y": "norm_emit_y"
     },
     "sim_name_to_pv_name": {
-        "distgen:r_dist:sigma_xy:value": "IRIS:LR20:130:CONFG_SEL",
+        "distgen:r_dist:sigma_xy:value": "CAMR:IN20:186:R_DIST",
         "SOL1:solenoid_field_scale": "SOLN:IN20:121:BDES",
         "CQ01:b1_gradient": "QUAD:IN20:121:BDES",
         "SQ01:b1_gradient": "QUAD:IN20:122:BDES",
@@ -80,8 +82,8 @@
         "QE04:b1_gradient": "QUAD:IN20:525:BDES",
         "distgen:t_dist:length:value": "Pulse_length",
         "distgen:total_charge:value": "FBCK:BCI0:1:CHRG_S",
-        "sigma_x": "OTRS:IN20:621:XRMS",
-        "sigma_y": "OTRS:IN20:621:YRMS",
+        "sigma_x": "OTRS:IN20:571:XRMS",
+        "sigma_y": "OTRS:IN20:571:YRMS",
         "sigma_z": "sigma_z",
         "norm_emit_x": "norm_emit_x",
         "norm_emit_y": "norm_emit_y"
@@ -103,8 +105,8 @@
         "QE04:b1_gradient": -1.0799999999136,
         "distgen:t_dist:length:value": 0.6060606060606061,
         "distgen:total_charge:value": 1e-3,
-        "sigma_x": 1e3,
-        "sigma_y": 1e3,
+        "sigma_x": 1e6,
+        "sigma_y": 1e6,
         "sigma_z": 1.0,
         "norm_emit_x": 1.0,
         "norm_emit_y": 1.0
