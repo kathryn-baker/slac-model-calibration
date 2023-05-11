@@ -1,5 +1,10 @@
-__pycache__/
 data/
+archive_data/
+archive_data/*.pkl
+
+__pycache__/
+mlruns/
+.vscode
 *.pt
 *.pth
 *.sav
