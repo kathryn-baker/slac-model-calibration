@@ -1,9 +1,7 @@
 input_variables:
-  IRIS:LR20:130:CONFG_SEL:
-    default: 1.2716036021603603
-    range:
-      - 0.6306374976893262
-      - 1.4999989749794993
+  CAMR:IN20:186:R_DIST:
+    default: 423.867825
+    range: [210.21247820852546, 499.9996083265339]
     type: scalar
   Pulse_length:
     default: 1.8550514181818183
@@ -17,19 +15,19 @@ input_variables:
       - 0.25
       - 0.25
     type: scalar
-  SOLN:IN20:121:BCTRL:
+  SOLN:IN20:121:BACT:
     default: 0.4779693455075814
     range:
       - 0.3774080152672698
       - 0.4983800018349345
     type: scalar
-  QUAD:IN20:121:BCTRL:
+  QUAD:IN20:121:BACT:
     default: -0.001499227120199691
     range:
       - -0.02098429469554406
       - 0.020999198106589838
     type: scalar
-  QUAD:IN20:122:BCTRL:
+  QUAD:IN20:122:BACT:
     default: -0.0006872989433749197
     range:
       - -0.020998830517503037
@@ -59,37 +57,37 @@ input_variables:
       - -24.99972566363747
       - 9.998904767155892
     type: scalar
-  QUAD:IN20:361:BCTRL:
+  QUAD:IN20:361:BACT:
     default: -2.0005920106399526
     range:
       - -4.318053641915576
       - -1.0800430432494976
     type: scalar
-  QUAD:IN20:371:BCTRL:
+  QUAD:IN20:371:BACT:
     default: 2.0005920106399526
     range:
       - 1.0913525514575348
       - 4.30967984810423
     type: scalar
-  QUAD:IN20:425:BCTRL:
+  QUAD:IN20:425:BACT:
     default: -0.20217600214382594
     range:
       - -7.559759590824369
       - -1.080762695815712
     type: scalar
-  QUAD:IN20:441:BCTRL:
+  QUAD:IN20:441:BACT:
     default: -0.17938799998564897
     range:
       - -1.0782202690353522
       - 7.559878303179915
     type: scalar
-  QUAD:IN20:511:BCTRL:
+  QUAD:IN20:511:BACT:
     default: 2.852171999771826
     range:
       - -1.0792451325247663
       - 7.5582919025608595
     type: scalar
-  QUAD:IN20:525:BCTRL:
+  QUAD:IN20:525:BACT:
     default: -3.218399988942528
     range:
       - -7.557932980106783
