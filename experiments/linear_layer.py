@@ -39,14 +39,14 @@ else:
     restricted_range = ["2021-11-01", "2021-11-30"]
     experiment_name = "injector_calibration"
 
-mlflow.set_experiment(experiment_name)
+mlflow.set_experiment("test")
 
 
 run_name = get_run_name(__file__)
 with mlflow.start_run(run_name=run_name):
     device, batch_size = get_device_and_batch_size()
     params = {
-        "epochs": 7000,
+        "epochs": 10,
         "batch_size": batch_size,
         "device": device,
         "optimizer": "Adam",
@@ -135,9 +135,7 @@ with mlflow.start_run(run_name=run_name):
         )
         # at the end of the epoch,evaluate how the model does on both the training
         # data and the validation data
-        history = test_step(
-            outputs, x_train, y_train, x_val, y_val, calibrated_model, loss_fn, history
-        )
+        history = test_step(outputs, ground_truth, calibrated_model, loss_fn, history)
 
         # apply learning rate schedule
         scheduler.step(history["val"]["total"][-1])
@@ -168,7 +166,7 @@ with mlflow.start_run(run_name=run_name):
     # restore calibrated_model and return best accuracy
     calibrated_model.load_state_dict(best_weights)
 
-    plot_results(ground_truth, val_scans, model, calibrated_model, history)
+    plot_results(ground_truth, val_scans, model, calibrated_model)
 
     # log final values
     mlflow.pytorch.log_model(calibrated_model.input_calibration, "input_calibration")

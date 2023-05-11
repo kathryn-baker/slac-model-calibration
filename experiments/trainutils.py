@@ -5,6 +5,7 @@ import mlflow
 import pandas as pd
 import torch
 from botorch.models.transforms.input import AffineInputTransform, InputTransform
+from ground_truth import GroundTruth
 from lume_model.torch import LUMEModule, PyTorchModel
 from lume_model.utils import variables_from_yaml
 from modules import LUMEModuleTransposed, PVtoSimFactor
@@ -203,20 +204,22 @@ def model_state_unchanged(original_model, updated_model):
         return False
 
 
-def test_step(
-    outputs, x_train, y_train, x_val, y_val, calibrated_model, loss_fn, history
-):
+def test_step(outputs, ground_truth: GroundTruth, calibrated_model, loss_fn, history):
     calibrated_model.eval()
-    y_pred_train = calibrated_model(x_train)
-    y_pred_val = calibrated_model(x_val)
+    y_pred_train = calibrated_model(ground_truth.x_train)
+    y_pred_val = calibrated_model(ground_truth.x_val)
     train_total = 0
     val_total = 0
     for output_idx, output_name in enumerate(outputs):
         # first evaluate on training data
-        train_mse = loss_fn(y_pred_train[:, output_idx], y_train[:, output_idx]).item()
+        train_mse = loss_fn(
+            y_pred_train[:, output_idx], ground_truth.y_train[:, output_idx]
+        ).item()
         history["train"][output_name].append(train_mse)
         train_total += train_mse
-        val_mse = loss_fn(y_pred_val[:, output_idx], y_val[:, output_idx]).item()
+        val_mse = loss_fn(
+            y_pred_val[:, output_idx], ground_truth.y_val[:, output_idx]
+        ).item()
         history["val"][output_name].append(val_mse)
         val_total += val_mse
     history["train"]["total"].append(train_total)

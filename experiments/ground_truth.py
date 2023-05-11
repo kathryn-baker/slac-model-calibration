@@ -1,6 +1,6 @@
-import torch
-import pandas as pd
 import numpy as np
+import pandas as pd
+import torch
 
 
 class GroundTruth:
@@ -53,10 +53,6 @@ class GroundTruth:
         return self._x_train
 
     @property
-    def y_train(self):
-        return self._y_train
-
-    @property
     def x_val(self):
         return self._x_val
 
@@ -65,8 +61,32 @@ class GroundTruth:
         return self._x_val_raw
 
     @property
+    def y_train(self):
+        if self._y_train.dim() == 1:
+            return self._y_train.unsqueeze(-1)
+        else:
+            return self._y_train
+
+    @property
     def y_val(self):
-        return self._y_val
+        if self._y_val.dim() == 1:
+            return self._y_val.unsqueeze(-1)
+        else:
+            return self._y_val
+
+    @property
+    def y_val_raw(self):
+        if self._y_val_raw.dim() == 1:
+            return self._y_val_raw.unsqueeze(-1)
+        else:
+            return self._y_val_raw
+
+    @property
+    def y_train_raw(self):
+        if self._y_train_raw.dim() == 1:
+            return self._y_train_raw.unsqueeze(-1)
+        else:
+            return self._y_train_raw
 
     def get_transformed_data(self):
         return (
@@ -86,16 +106,27 @@ class GroundTruth:
     def convert_output_pv_to_nn(self, y_raw):
         if not torch.is_tensor(y_raw):
             y_raw = torch.tensor(y_raw)
-        return self.output_sim_to_nn(self.output_pv_to_sim(y_raw))
+        result = self.output_sim_to_nn(self.output_pv_to_sim(y_raw))
+        if result.dim() == 1:
+            return result.unsqueeze(-1)
+        else:
+            return result
 
     def convert_input_nn_to_pv(self, x_nn):
         if not torch.is_tensor(x_nn):
             x_nn = torch.tensor(x_nn)
-        return self.input_pv_to_sim.untransform(self.input_sim_to_nn.untransform(x_nn))
+        result = self.input_pv_to_sim.untransform(
+            self.input_sim_to_nn.untransform(x_nn)
+        )
+        return result
 
     def convert_output_nn_to_pv(self, y_nn):
         if not torch.is_tensor(y_nn):
             y_nn = torch.tensor(y_nn)
-        return self.output_pv_to_sim.untransform(
+        result = self.output_pv_to_sim.untransform(
             self.output_sim_to_nn.untransform(y_nn)
         )
+        if result.dim() == 1:
+            return result.unsqueeze(-1)
+        else:
+            return result

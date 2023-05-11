@@ -8,8 +8,16 @@ import numpy as np
 import pandas as pd
 import torch
 from ground_truth import GroundTruth
-from modules import CalibratedLCLS, LinearCalibrationLayer
-from plot import plot_feature_histogram, plot_results
+from modules import CalibratedLCLS, TrainableCalibrationLayer
+
+# from plot import plot_feature_histogram, plot_results
+from plot import (
+    plot_scans,
+    plot_feature_histogram,
+    plot_predictions,
+    plot_time_series,
+    plot_results,
+)
 from trainutils import (
     get_device_and_batch_size,
     get_features,
@@ -39,14 +47,15 @@ else:
     restricted_range = ["2021-11-01", "2021-11-30"]
     experiment_name = "injector_calibration"
 
-mlflow.set_experiment(experiment_name)
+mlflow.set_experiment("test")
 
 
 run_name = get_run_name(__file__)
+
 with mlflow.start_run(run_name=run_name):
     device, batch_size = get_device_and_batch_size()
     params = {
-        "epochs": 7000,
+        "epochs": 10,
         "batch_size": batch_size,
         "device": device,
         "optimizer": "Adam",
@@ -77,7 +86,7 @@ with mlflow.start_run(run_name=run_name):
         restricted_range=restricted_range,
     )
     x_train, y_train, x_val, y_val, x_test, y_test = ground_truth.get_transformed_data()
-
+    print(y_train.shape)
     val_scans = [
         pd.read_pickle(filename)
         for filename in glob.glob(f"{data_source}/val_scan_*.pkl")
@@ -90,20 +99,14 @@ with mlflow.start_run(run_name=run_name):
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
+    # plot_scans(val_scans, ground_truth, models=[model], save_name="scan_model")
+    input_calibration = TrainableCalibrationLayer(
+        len(model.feature_order), scale=1.0, offset=1e-6, trainable=True
+    ).to(device)
+    output_calibration = TrainableCalibrationLayer(
+        len(model.output_order), scale=1.0, offset=1e-6, trainable=True
+    ).to(device)
 
-    input_calibration = LinearCalibrationLayer(
-        shape_in=len(model.feature_order),
-        shape_out=len(model.feature_order),
-        device=device,
-        dtype=x_train.dtype,
-    )
-
-    output_calibration = LinearCalibrationLayer(
-        shape_in=len(model.output_order),
-        shape_out=len(model.output_order),
-        device=device,
-        dtype=x_train.dtype,
-    )
     # look at the pytorch model within the LUMEModule within the PyTorchModel
     original_model = deepcopy(model._model.model)
 
@@ -135,9 +138,7 @@ with mlflow.start_run(run_name=run_name):
         )
         # at the end of the epoch,evaluate how the model does on both the training
         # data and the validation data
-        history = test_step(
-            outputs, x_train, y_train, x_val, y_val, calibrated_model, loss_fn, history
-        )
+        history = test_step(outputs, ground_truth, calibrated_model, loss_fn, history)
 
         # apply learning rate schedule
         scheduler.step(history["val"]["total"][-1])
@@ -167,9 +168,20 @@ with mlflow.start_run(run_name=run_name):
 
     # restore calibrated_model and return best accuracy
     calibrated_model.load_state_dict(best_weights)
-
-    plot_results(ground_truth, val_scans, model, calibrated_model, history)
+    plot_results(ground_truth, val_scans, model, calibrated_model)
 
     # log final values
     mlflow.pytorch.log_model(calibrated_model.input_calibration, "input_calibration")
     mlflow.pytorch.log_model(calibrated_model.output_calibration, "output_calibration")
+    log_calibration_params(
+        features,
+        calibrated_model.input_calibration.scales.detach(),
+        calibrated_model.input_calibration.offsets.detach(),
+        "input_calibration",
+    )
+    log_calibration_params(
+        outputs,
+        calibrated_model.output_calibration.scales.detach(),
+        calibrated_model.output_calibration.offsets.detach(),
+        "output_calibration",
+    )
