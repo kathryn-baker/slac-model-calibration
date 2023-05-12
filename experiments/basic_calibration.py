@@ -9,21 +9,16 @@ import pandas as pd
 import torch
 from ground_truth import GroundTruth
 from modules import CalibratedLCLS, TrainableCalibrationLayer
-
-# from plot import plot_feature_histogram, plot_results
-from plot import (
-    plot_scans,
-    plot_feature_histogram,
-    plot_predictions,
-    plot_time_series,
-    plot_results,
-)
+from params import parser
+from plot import plot_feature_histogram, plot_results
 from trainutils import (
     get_device_and_batch_size,
+    get_experiment_name,
     get_features,
     get_model,
     get_outputs,
     get_pv_to_sim_transformers,
+    get_restricted_range,
     get_run_name,
     get_sim_to_nn_transformers,
     initialise_history,
@@ -31,7 +26,6 @@ from trainutils import (
     log_history,
     model_info,
     model_state_unchanged,
-    norm_data,
     print_progress,
     pv_info,
     test_step,
@@ -39,13 +33,10 @@ from trainutils import (
     update_best_weights,
 )
 
-data_source = "artificial_data"
-if data_source == "artificial_data":
-    restricted_range = None
-    experiment_name = "injector_calibration_artificial"
-else:
-    restricted_range = ["2021-11-01", "2021-11-30"]
-    experiment_name = "injector_calibration"
+args = parser.parse_args()
+experiment_name = get_experiment_name(args)
+restricted_range = get_restricted_range(args)
+
 
 mlflow.set_experiment("test")
 
@@ -55,10 +46,11 @@ run_name = get_run_name(__file__)
 with mlflow.start_run(run_name=run_name):
     device, batch_size = get_device_and_batch_size()
     params = {
-        "epochs": 10,
+        "epochs": args.epochs,
         "batch_size": batch_size,
         "device": device,
         "optimizer": "Adam",
+        "lr": args.learning_rate,
     }
 
     mlflow.log_params(params)
@@ -75,7 +67,7 @@ with mlflow.start_run(run_name=run_name):
     input_sim_to_nn, output_sim_to_nn = get_sim_to_nn_transformers(output_indices)
 
     ground_truth = GroundTruth(
-        data_source,
+        args.data_source,
         features,
         outputs,
         input_pv_to_sim,
@@ -88,7 +80,7 @@ with mlflow.start_run(run_name=run_name):
     x_train, y_train, x_val, y_val, x_test, y_test = ground_truth.get_transformed_data()
     val_scans = [
         pd.read_pickle(filename)
-        for filename in glob.glob(f"{data_source}/val_scan_*.pkl")
+        for filename in glob.glob(f"{args.data_source}/val_scan_*.pkl")
     ]
     plot_feature_histogram(ground_truth.x_val_raw, input_pv_to_sim, model_info)
 
@@ -116,7 +108,7 @@ with mlflow.start_run(run_name=run_name):
 
     # now we define a training loop that trains the offsets
     loss_fn = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(calibrated_model.parameters(), lr=1e-6)
+    optimizer = torch.optim.Adam(calibrated_model.parameters(), lr=params["lr"])
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, factor=0.9, patience=50, min_lr=1e-8

@@ -1,4 +1,5 @@
 import json
+import tempfile
 from copy import deepcopy
 
 import mlflow
@@ -17,6 +18,24 @@ with open("configs/model_info.json", "r") as f:
     model_info = json.load(f)
 with open("configs/normalization.json", "r") as f:
     norm_data = json.load(f)
+
+
+def get_experiment_name(args):
+    if args.data_source == "archive_data":
+        experiment_name = "injector_calibration"
+    else:
+        experiment_name = f"injector_calibration_{args.data_source}"
+    if args.epochs == 10:
+        experiment_name = "test"
+    return experiment_name
+
+
+def get_restricted_range(args):
+    if args.data_source == "archive_data":
+        restricted_range = ["2021-11-01", "2021-12-01"]
+    else:
+        restricted_range = None
+    return restricted_range
 
 
 def get_run_name(filename):
@@ -269,9 +288,6 @@ def print_progress(
             )
 
 
-import tempfile
-
-
 def log_calibration_params(
     model,
     ground_truth: GroundTruth,
@@ -279,12 +295,12 @@ def log_calibration_params(
 ):
     calibration = pd.DataFrame()
     calibration["parameters"] = ground_truth.features + ground_truth.outputs
-    calibration["scales"] = (
+    calibration["scales_learned"] = (
         torch.cat([model.input_calibration.scales, model.output_calibration.scales])
         .detach()
         .numpy()
     )
-    calibration["offsets"] = (
+    calibration["offsets_learned"] = (
         torch.cat([model.input_calibration.offsets, model.output_calibration.offsets])
         .detach()
         .numpy()
