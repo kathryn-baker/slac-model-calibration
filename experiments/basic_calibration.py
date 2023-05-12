@@ -86,7 +86,6 @@ with mlflow.start_run(run_name=run_name):
         restricted_range=restricted_range,
     )
     x_train, y_train, x_val, y_val, x_test, y_test = ground_truth.get_transformed_data()
-    print(y_train.shape)
     val_scans = [
         pd.read_pickle(filename)
         for filename in glob.glob(f"{data_source}/val_scan_*.pkl")
@@ -159,7 +158,7 @@ with mlflow.start_run(run_name=run_name):
             epoch,
         )
         best_weights, best_mse = update_best_weights(
-            calibrated_model, best_mse, history
+            calibrated_model, best_mse, best_weights, history
         )
 
         # at the end of the epoch, verify that the core model has not updated
@@ -173,15 +172,4 @@ with mlflow.start_run(run_name=run_name):
     # log final values
     mlflow.pytorch.log_model(calibrated_model.input_calibration, "input_calibration")
     mlflow.pytorch.log_model(calibrated_model.output_calibration, "output_calibration")
-    log_calibration_params(
-        features,
-        calibrated_model.input_calibration.scales.detach(),
-        calibrated_model.input_calibration.offsets.detach(),
-        "input_calibration",
-    )
-    log_calibration_params(
-        outputs,
-        calibrated_model.output_calibration.scales.detach(),
-        calibrated_model.output_calibration.offsets.detach(),
-        "output_calibration",
-    )
+    log_calibration_params(calibrated_model, ground_truth, filename="calibration")

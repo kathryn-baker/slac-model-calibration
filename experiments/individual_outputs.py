@@ -39,13 +39,13 @@ else:
     restricted_range = ["2021-11-01", "2021-11-30"]
     experiment_name = "injector_calibration"
 
-mlflow.set_experiment("test")
+mlflow.set_experiment(experiment_name)
 
 run_name = get_run_name(__file__)
 with mlflow.start_run(run_name=run_name):
     device, batch_size = get_device_and_batch_size()
     params = {
-        "epochs": 10,
+        "epochs": 10000,
         "batch_size": batch_size,
         "device": device,
         "optimizer": "Adam",
@@ -173,9 +173,8 @@ with mlflow.start_run(run_name=run_name):
                     epoch,
                 )
                 best_weights, best_mse = update_best_weights(
-                    calibrated_model, best_mse, history
+                    calibrated_model, best_mse, best_weights, history
                 )
-
                 # at the end of the epoch, verify that the core model has not updated
                 updated_model = deepcopy(calibrated_model.model._model.model)
                 assert model_state_unchanged(original_model, updated_model)
@@ -194,14 +193,5 @@ with mlflow.start_run(run_name=run_name):
             )
 
             log_calibration_params(
-                features,
-                calibrated_model.input_calibration.scales.detach(),
-                calibrated_model.input_calibration.offsets.detach(),
-                "input_calibration",
-            )
-            log_calibration_params(
-                outputs,
-                calibrated_model.output_calibration.scales.detach(),
-                calibrated_model.output_calibration.offsets.detach(),
-                "output_calibration",
+                calibrated_model, ground_truth, filename="calibration"
             )

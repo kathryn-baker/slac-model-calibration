@@ -22,6 +22,7 @@ def save_and_log_image(fig, save_name):
         filepath = f"{tempdir}/{save_name}.png"
         fig.savefig(filepath)
         mlflow.log_artifact(filepath)
+        plt.close(fig)
 
 
 def prediction_as_dataframe(ground_truth: GroundTruth, model, data):
@@ -118,7 +119,7 @@ def plot_scans(
                 title += f"{short_otr_name} {mse:.3e}\n"
             title += "\n"
         ax[scan_no].set_title(title)
-        ax[-1].legend()
+    ax[-1].legend()
     ax[0].set_ylabel("OTR")
     ax[int(0.5 * len(val_scans))].set_xlabel(quad_name)
     fig.tight_layout()

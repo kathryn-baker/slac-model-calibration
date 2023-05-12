@@ -269,19 +269,58 @@ def print_progress(
             )
 
 
-def log_calibration_params(features, scales, offsets, filename):
-    input_string = "parameter".ljust(30, " ") + "scale\t".ljust(8, " ") + "offset\n"
-    for feature, scale, offset in zip(
-        features,
-        scales,
-        offsets,
-    ):
-        input_string += f"{feature:<30}\t{scale.item():.5f}\t{offset.item():.5f}\n"
+import tempfile
 
-    mlflow.log_text(
-        input_string,
-        f"{filename}.txt",
+
+def log_calibration_params(
+    model,
+    ground_truth: GroundTruth,
+    filename="calibration",
+):
+    calibration = pd.DataFrame()
+    calibration["parameters"] = ground_truth.features + ground_truth.outputs
+    calibration["scales"] = (
+        torch.cat([model.input_calibration.scales, model.output_calibration.scales])
+        .detach()
+        .numpy()
     )
+    calibration["offsets"] = (
+        torch.cat([model.input_calibration.offsets, model.output_calibration.offsets])
+        .detach()
+        .numpy()
+    )
+    if ground_truth.input_scales is not None and ground_truth.output_scales is not None:
+        calibration["scales_true"] = (
+            torch.cat(
+                [
+                    ground_truth.input_scales,
+                    ground_truth.output_scales[0 : len(ground_truth.outputs)],
+                ]
+            )
+            .detach()
+            .numpy()
+        )
+    if (
+        ground_truth.input_offsets is not None
+        and ground_truth.output_offsets is not None
+    ):
+        calibration["offsets_true"] = (
+            torch.cat(
+                [
+                    ground_truth.input_offsets,
+                    ground_truth.output_offsets[0 : len(ground_truth.outputs)],
+                ]
+            )
+            .detach()
+            .numpy()
+        )
+    calibration = calibration[sorted(calibration.columns)]
+    calibration = calibration.set_index("parameters")
+    calibration = calibration.round(4)
+    with tempfile.TemporaryDirectory() as tempdir:
+        filepath = f"{tempdir}/{filename}"
+        calibration.to_csv(f"{filepath}.csv")
+        mlflow.log_artifact(f"{filepath}.csv")
 
 
 def get_device_and_batch_size():
@@ -294,7 +333,7 @@ def get_device_and_batch_size():
     return device, batch_size
 
 
-def update_best_weights(calibrated_model, best_mse, history):
+def update_best_weights(calibrated_model, best_mse, best_weights, history):
     if history["val"]["total"][-1] < best_mse:
         # use the validation set to determine which is best
         best_mse = deepcopy(history["val"]["total"][-1])

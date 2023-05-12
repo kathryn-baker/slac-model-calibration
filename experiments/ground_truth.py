@@ -48,6 +48,18 @@ class GroundTruth:
         self._x_test = self.input_sim_to_nn(self.input_pv_to_sim(self._x_test_raw))
         self._y_test = self.output_sim_to_nn(self.output_pv_to_sim(self._y_test_raw))
 
+        # load the true offsets and scales if they exist
+        try:
+            self.input_scales = torch.load(f"{data_dir}/x_scales.pt")
+            self.input_offsets = torch.load(f"{data_dir}/x_offsets.pt")
+            self.output_scales = torch.load(f"{data_dir}/y_scales.pt")
+            self.output_offsets = torch.load(f"{data_dir}/y_offsets.pt")
+        except FileNotFoundError:
+            self.input_scales = None
+            self.input_offsets = None
+            self.output_scales = None
+            self.output_offsets = None
+
     @property
     def x_train(self):
         return self._x_train
