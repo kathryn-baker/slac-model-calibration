@@ -2,6 +2,14 @@ import torch
 from botorch.models.transforms.input import InputTransform
 from lume_model.torch import LUMEModule
 
+activation_functions = {
+    "relu": torch.nn.ReLU(),
+    "tanh": torch.nn.Tanh(),
+    "l_relu": torch.nn.LeakyReLU(0.2),
+    "sigmoid": torch.nn.Sigmoid(),
+    None: None,
+}
+
 
 class PVtoSimFactor(InputTransform, torch.nn.Module):
     def __init__(self, conversion: torch.Tensor) -> None:
@@ -51,14 +59,22 @@ class CalibratedLCLS(torch.nn.Module):
 
 
 class LinearCalibrationLayer(torch.nn.Module):
-    def __init__(self, shape_in, shape_out, device, dtype):
+    def __init__(
+        self,
+        shape_in,
+        shape_out,
+        device,
+        dtype,
+        activation="relu",
+    ):
         super().__init__()
         self.linear = torch.nn.Linear(shape_in, shape_out, device=device, dtype=dtype)
-        self.activation = torch.nn.ReLU()
+        self.activation = activation_functions[activation]
 
     def forward(self, x):
         x = self.linear(x)
-        x = self.activation(x)
+        if self.activation is not None:
+            x = self.activation(x)
         return x
 
 

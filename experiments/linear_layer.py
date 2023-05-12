@@ -50,6 +50,7 @@ with mlflow.start_run(run_name=run_name):
         "batch_size": batch_size,
         "device": device,
         "optimizer": "Adam",
+        "activation": "tanh",
     }
 
     mlflow.log_params(params)
@@ -96,6 +97,7 @@ with mlflow.start_run(run_name=run_name):
         shape_out=len(model.feature_order),
         device=device,
         dtype=x_train.dtype,
+        activation=params["activation"],
     )
 
     output_calibration = LinearCalibrationLayer(
@@ -103,6 +105,7 @@ with mlflow.start_run(run_name=run_name):
         shape_out=len(model.output_order),
         device=device,
         dtype=x_train.dtype,
+        activation=params["activation"],
     )
     # look at the pytorch model within the LUMEModule within the PyTorchModel
     original_model = deepcopy(model._model.model)
