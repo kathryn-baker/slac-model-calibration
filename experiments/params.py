@@ -19,7 +19,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--activation",
-    default=None,
+    default="none",
     help="The activation function to use in a Linear calibration layer",
     type=str,
 )

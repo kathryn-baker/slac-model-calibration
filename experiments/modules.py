@@ -7,7 +7,7 @@ activation_functions = {
     "tanh": torch.nn.Tanh(),
     "l_relu": torch.nn.LeakyReLU(0.2),
     "sigmoid": torch.nn.Sigmoid(),
-    None: None,
+    "none": None,
 }
 
 

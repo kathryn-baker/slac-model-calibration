@@ -7,6 +7,7 @@ import mlflow
 import numpy as np
 import pandas as pd
 import torch
+from callbacks import EarlyStopping
 from ground_truth import GroundTruth
 from modules import CalibratedLCLS, LinearCalibrationLayer
 from params import parser
@@ -132,44 +133,60 @@ with mlflow.start_run(run_name=run_name):
     best_weights = None
 
     history = initialise_history(outputs)
+    early_stopping = EarlyStopping(patience=1000, verbose=True, delta=1e-8)
 
     for epoch in range(params["epochs"]):
-        ### train
-        calibrated_model, loss_fn, optimizer = train_step(
-            train_dataloader, calibrated_model, loss_fn, optimizer
-        )
-        # at the end of the epoch,evaluate how the model does on both the training
-        # data and the validation data
-        history = test_step(outputs, ground_truth, calibrated_model, loss_fn, history)
-
-        # apply learning rate schedule
-        scheduler.step(history["val"]["total"][-1])
         try:
-            history["lr"].append(scheduler.get_last_lr()[0])
-        except AttributeError:
-            history["lr"].append(optimizer.param_groups[0]["lr"])
+            ### train
+            calibrated_model, loss_fn, optimizer = train_step(
+                train_dataloader, calibrated_model, loss_fn, optimizer
+            )
+            # at the end of the epoch,evaluate how the model does on both the training
+            # data and the validation data
+            history = test_step(
+                outputs, ground_truth, calibrated_model, loss_fn, history
+            )
 
-        log_history(history, epoch)
-        print_progress(
-            params,
-            ground_truth,
-            val_scans,
-            model,
-            calibrated_model,
-            print_vals,
-            history,
-            epoch,
-        )
-        best_weights, best_mse = update_best_weights(
-            calibrated_model, best_mse, best_weights, history
-        )
-        # at the end of the epoch, verify that the core model has not updated
-        updated_model = deepcopy(calibrated_model.model._model.model)
-        assert model_state_unchanged(original_model, updated_model)
+            # apply learning rate schedule
+            scheduler.step(history["val"]["total"][-1])
+            try:
+                history["lr"].append(scheduler.get_last_lr()[0])
+            except AttributeError:
+                history["lr"].append(optimizer.param_groups[0]["lr"])
 
-    # restore calibrated_model and return best accuracy
+            log_history(history, epoch)
+            print_progress(
+                params,
+                ground_truth,
+                val_scans,
+                model,
+                calibrated_model,
+                print_vals,
+                history,
+                epoch,
+            )
+            best_weights, best_mse = update_best_weights(
+                calibrated_model, best_mse, best_weights, history
+            )
+            # early_stopping needs the validation loss to check if it has decresed,
+            # and if it has, it will make a checkpoint of the current model
+            early_stopping(history["val"]["total"][-1], calibrated_model, epoch)
+
+            # at the end of the epoch, verify that the core model has not updated
+            updated_model = deepcopy(calibrated_model.model._model.model)
+            assert model_state_unchanged(original_model, updated_model)
+            if early_stopping.early_stop:
+                print(
+                    f"Early stopping at epoch {epoch}, min val_loss: {early_stopping.val_loss_min:.6f}."
+                )
+                mlflow.log_param("last_epoch", epoch)
+                break
+        except KeyboardInterrupt:
+            mlflow.log_param("last_epoch", epoch)
+            break
+    # calibrated_model = early_stopping.restore_best_weights(calibrated_model)
+
     calibrated_model.load_state_dict(best_weights)
-
     plot_results(ground_truth, val_scans, model, calibrated_model)
 
     # log final values
