@@ -35,17 +35,18 @@ from trainutils import (
 )
 
 args = parser.parse_args()
+
 experiment_name = get_experiment_name(args)
 restricted_range = get_restricted_range(args)
+device, batch_size = get_device_and_batch_size()
 
 
-mlflow.set_experiment(experiment_name)
+mlflow.set_experiment(f"{experiment_name}_{device}")
 
 
 run_name = get_run_name(__file__)
 
 with mlflow.start_run(run_name=run_name):
-    device, batch_size = get_device_and_batch_size()
     params = {
         "epochs": args.epochs,
         "batch_size": batch_size,
@@ -100,7 +101,7 @@ with mlflow.start_run(run_name=run_name):
     ).to(device)
 
     # look at the pytorch model within the LUMEModule within the PyTorchModel
-    original_model = deepcopy(model._model.model)
+    original_model = deepcopy(model._model._model)
 
     calibrated_model = CalibratedLCLS(model, input_calibration, output_calibration).to(
         device
@@ -124,6 +125,7 @@ with mlflow.start_run(run_name=run_name):
     history = initialise_history(outputs)
 
     for epoch in range(params["epochs"]):
+        calibrated_model.to(device)
         try:
             ### train
             calibrated_model, loss_fn, optimizer = train_step(
@@ -161,7 +163,7 @@ with mlflow.start_run(run_name=run_name):
             early_stopping(history["val"]["total"][-1], calibrated_model, epoch)
 
             # at the end of the epoch, verify that the core model has not updated
-            updated_model = deepcopy(calibrated_model.model._model.model)
+            updated_model = deepcopy(calibrated_model.model._model._model)
             assert model_state_unchanged(original_model, updated_model)
             if early_stopping.early_stop:
                 print(
@@ -172,11 +174,11 @@ with mlflow.start_run(run_name=run_name):
         except KeyboardInterrupt:
             mlflow.log_param("last_epoch", epoch)
             break
-    # calibrated_model = early_stopping.restore_best_weights(calibrated_model)
-    calibrated_model.load_state_dict(best_weights)
 
     # restore calibrated_model and return best accuracy
-    # calibrated_model.load_state_dict(best_weights)
+    calibrated_model.load_state_dict(best_weights)
+    model.to("cpu")
+    calibrated_model.to("cpu")
     plot_results(ground_truth, val_scans, model, calibrated_model)
 
     # log final values

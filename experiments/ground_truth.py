@@ -113,11 +113,15 @@ class GroundTruth:
     def convert_input_pv_to_nn(self, x_raw):
         if not torch.is_tensor(x_raw):
             x_raw = torch.tensor(x_raw)
+        self.input_sim_to_nn.to(x_raw)
+        self.input_pv_to_sim.to(x_raw)
         return self.input_sim_to_nn(self.input_pv_to_sim(x_raw))
 
     def convert_output_pv_to_nn(self, y_raw):
         if not torch.is_tensor(y_raw):
             y_raw = torch.tensor(y_raw)
+        self.output_sim_to_nn.to(y_raw)
+        self.output_pv_to_sim.to(y_raw)
         result = self.output_sim_to_nn(self.output_pv_to_sim(y_raw))
         if result.dim() == 1:
             return result.unsqueeze(-1)
@@ -127,6 +131,8 @@ class GroundTruth:
     def convert_input_nn_to_pv(self, x_nn):
         if not torch.is_tensor(x_nn):
             x_nn = torch.tensor(x_nn)
+        self.input_sim_to_nn.to(x_nn)
+        self.input_pv_to_sim.to(x_nn)
         result = self.input_pv_to_sim.untransform(
             self.input_sim_to_nn.untransform(x_nn)
         )
@@ -135,6 +141,8 @@ class GroundTruth:
     def convert_output_nn_to_pv(self, y_nn):
         if not torch.is_tensor(y_nn):
             y_nn = torch.tensor(y_nn)
+        self.output_sim_to_nn.to(y_nn)
+        self.output_pv_to_sim.to(y_nn)
         result = self.output_pv_to_sim.untransform(
             self.output_sim_to_nn.untransform(y_nn)
         )

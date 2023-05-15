@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import torch
 from botorch.models.transforms.input import InputTransform
 from lume_model.torch import LUMEModule
@@ -20,9 +22,11 @@ class PVtoSimFactor(InputTransform, torch.nn.Module):
         self.transform_on_fantasize = False
 
     def transform(self, x):
+        self._conversion = self._conversion.to(x)
         return x * self._conversion
 
     def untransform(self, x):
+        self._conversion = self._conversion.to(x)
         return x / self._conversion
 
 
@@ -37,6 +41,8 @@ class TrainableCalibrationLayer(torch.nn.Module):
         )
 
     def forward(self, x):
+        self.scales.to(x.device)
+        self.offsets.to(x.device)
         x = self.scales * (x + self.offsets)
         return x
 
@@ -49,9 +55,11 @@ class CalibratedLCLS(torch.nn.Module):
         self.output_calibration = output_calibration
 
     def forward(self, x):
-        x = self.input_calibration(x)
-        x = self.model(x)
-        x = self.output_calibration(x)
+        original_device = deepcopy(x.device)
+        x = self.input_calibration(x.to(original_device))
+        x = self.model(x.to(original_device))
+        x = self.output_calibration(x.to(original_device))
+        x.to(original_device)
         if x.dim() == 1:
             return x.unsqueeze(-1)
         else:
@@ -72,6 +80,8 @@ class LinearCalibrationLayer(torch.nn.Module):
         self.activation = activation_functions[activation]
 
     def forward(self, x):
+        self.linear.to(x)
+        self.activation.to(x)
         x = self.linear(x)
         if self.activation is not None:
             x = self.activation(x)

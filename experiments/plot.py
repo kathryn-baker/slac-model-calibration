@@ -45,7 +45,7 @@ def plot_feature_histogram(
     fig, ax = plt.subplots(n_rows, n_cols, figsize=(3 * n_cols, 3 * n_rows))
     ax = ax.ravel()
 
-    sim_data = input_pv_to_sim(x_data_raw)
+    sim_data = input_pv_to_sim(x_data_raw).cpu()
 
     for feature_no, feature_name in enumerate(model_info["model_in_list"]):
         lb = model_info["train_input_mins"][feature_no]
@@ -59,6 +59,8 @@ def plot_feature_histogram(
 
 
 def plot_results(ground_truth, val_scans, model, calibrated_model):
+    model.to("cpu")
+    calibrated_model.to("cpu")
     plot_scans(
         val_scans,
         ground_truth,
@@ -102,6 +104,7 @@ def plot_scans(
                 marker=markers[otr_no],
             )
         for model_no, model in enumerate(models):
+            model.to("cpu")
             title += f"{labels[model_no]}\n"
             for otr_no, otr_name in enumerate(otr_names):
                 short_otr_name = otr_name.split(":")[-1]
@@ -144,7 +147,7 @@ def plot_predictions(ground_truth: GroundTruth, models=[], save_name="prediction
         else:
             axes = ax[output_no]
         # first plot the ground truth
-        y_val = ground_truth.y_val_raw.detach().numpy()[:, output_no]
+        y_val = ground_truth.y_val_raw.cpu().detach().numpy()[:, output_no]
         sort_idx = np.argsort(y_val)
 
         axes.scatter(
@@ -156,9 +159,13 @@ def plot_predictions(ground_truth: GroundTruth, models=[], save_name="prediction
             alpha=0.75,
         )
         for model_no, model in enumerate(models):
+            model.to("cpu")
+            ground_truth.output_sim_to_nn.to("cpu")
+            ground_truth.output_pv_to_sim.to("cpu")
             title += f"{labels[model_no]}  "
             pred = (
-                ground_truth.convert_output_nn_to_pv(model(ground_truth.x_val))
+                ground_truth.convert_output_nn_to_pv(model(ground_truth.x_val.cpu()))
+                .cpu()
                 .detach()
                 .numpy()[:, output_no]
             )
