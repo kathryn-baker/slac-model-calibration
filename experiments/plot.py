@@ -90,6 +90,7 @@ def plot_scans(
 
     for scan_no, scan in enumerate(val_scans):
         title = "MSE:\n"
+        scan = scan.sort_values(quad_name)
         for otr_no, otr_name in enumerate(otr_names):
             short_otr_name = otr_name.split(":")[-1]
             ax[scan_no].plot(
@@ -211,4 +212,31 @@ def plot_time_series(ground_truth: GroundTruth, models=[], save_name="time_serie
         axes.legend()
         axes.set_title(output_name)
     fig.tight_layout()
+    save_and_log_image(fig, save_name)
+
+
+def plot_learned_parameters(calibration, save_name="calibration"):
+    fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+    perfect = [1.0, 0.0]
+    parameters = ["scales", "offsets"]
+    for parameter_no, (perfect_val, parameter) in enumerate(zip(perfect, parameters)):
+        ax[parameter_no].bar(
+            calibration["parameters"],
+            calibration[f"{parameter}_true"],
+            label="true",
+            alpha=0.5,
+        )
+        ax[parameter_no].bar(
+            calibration["parameters"],
+            calibration[f"{parameter}_learned"],
+            label="learned",
+            alpha=0.5,
+        )
+        ax[parameter_no].axhline(
+            perfect_val, color="k", linestyle="dashed", linewidth=0.5
+        )
+        ax[parameter_no].set_ylabel(parameter)
+
+    ax[-1].set_xticklabels(calibration["parameters"], rotation=90)
+    ax[-1].legend()
     save_and_log_image(fig, save_name)

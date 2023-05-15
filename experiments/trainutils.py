@@ -21,12 +21,15 @@ with open("configs/normalization.json", "r") as f:
 
 
 def get_experiment_name(args):
-    if args.data_source == "archive_data":
-        experiment_name = "injector_calibration"
-    else:
-        experiment_name = f"injector_calibration_{args.data_source}"
     if args.epochs == 10:
         experiment_name = "test"
+    elif args.data_source == "archive_data":
+        experiment_name = "injector_calibration"
+    else:
+        experiment_name = (
+            f"injector_calibration_{args.data_source.replace('_data', '')}"
+        )
+    print(experiment_name)
     return experiment_name
 
 
