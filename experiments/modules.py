@@ -81,9 +81,9 @@ class LinearCalibrationLayer(torch.nn.Module):
 
     def forward(self, x):
         self.linear.to(x)
-        self.activation.to(x)
         x = self.linear(x)
         if self.activation is not None:
+            self.activation.to(x)
             x = self.activation(x)
         return x
 

@@ -228,13 +228,13 @@ def plot_learned_parameters(calibration, save_name="calibration"):
     parameters = ["scales", "offsets"]
     for parameter_no, (perfect_val, parameter) in enumerate(zip(perfect, parameters)):
         ax[parameter_no].bar(
-            calibration["parameters"],
+            calibration.index,
             calibration[f"{parameter}_true"],
             label="true",
             alpha=0.5,
         )
         ax[parameter_no].bar(
-            calibration["parameters"],
+            calibration.index,
             calibration[f"{parameter}_learned"],
             label="learned",
             alpha=0.5,
@@ -244,6 +244,6 @@ def plot_learned_parameters(calibration, save_name="calibration"):
         )
         ax[parameter_no].set_ylabel(parameter)
 
-    ax[-1].set_xticklabels(calibration["parameters"], rotation=90)
+    ax[-1].set_xticklabels(calibration.index, rotation=90)
     ax[-1].legend()
     save_and_log_image(fig, save_name)

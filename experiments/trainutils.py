@@ -10,7 +10,7 @@ from ground_truth import GroundTruth
 from lume_model.torch import LUMEModule, PyTorchModel
 from lume_model.utils import variables_from_yaml
 from modules import LUMEModuleTransposed, PVtoSimFactor
-from plot import plot_scans
+from plot import plot_scans, plot_learned_parameters
 
 with open("configs/pv_info.json", "r") as f:
     pv_info = json.load(f)
@@ -340,6 +340,10 @@ def log_calibration_params(
         filepath = f"{tempdir}/{filename}"
         calibration.to_csv(f"{filepath}.csv")
         mlflow.log_artifact(f"{filepath}.csv")
+    try:
+        plot_learned_parameters(calibration, save_name="learned_calibration")
+    except KeyError:
+        pass
 
 
 def get_device_and_batch_size():
