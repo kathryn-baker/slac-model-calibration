@@ -1,0 +1,11 @@
+name: slac-training
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - botorch
+  - mlflow
+  - pandas
+  - lume-model
+  - numpy
+  - plotly
