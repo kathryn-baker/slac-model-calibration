@@ -291,6 +291,42 @@ def print_progress(
             )
 
 
+def track_calibration(
+    calibrated_model, scale_evolution: pd.DataFrame, offset_evolution: pd.DataFrame
+):
+    scale_evolution.loc[len(scale_evolution)] = (
+        torch.cat(
+            [
+                calibrated_model.input_calibration.scales,
+                calibrated_model.output_calibration.scales,
+            ]
+        )
+        .detach()
+        .numpy()
+    )
+    offset_evolution.loc[len(offset_evolution)] = (
+        torch.cat(
+            [
+                calibrated_model.input_calibration.offsets,
+                calibrated_model.output_calibration.offsets,
+            ]
+        )
+        .detach()
+        .numpy()
+    )
+    return scale_evolution, offset_evolution
+
+
+def log_evolution(scale_evolution, offset_evolution):
+    for param, evolution in zip(
+        ["scales", "offsets"], [scale_evolution, offset_evolution]
+    ):
+        with tempfile.TemporaryDirectory() as tempdir:
+            filepath = f"{tempdir}/{param}_evolution"
+            evolution.to_csv(f"{filepath}.csv")
+            mlflow.log_artifact(f"{filepath}.csv")
+
+
 def log_calibration_params(
     model,
     ground_truth: GroundTruth,

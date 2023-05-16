@@ -24,12 +24,14 @@ from trainutils import (
     get_sim_to_nn_transformers,
     initialise_history,
     log_calibration_params,
+    log_evolution,
     log_history,
     model_info,
     model_state_unchanged,
     print_progress,
     pv_info,
     test_step,
+    track_calibration,
     train_step,
     update_best_weights,
 )
@@ -124,6 +126,11 @@ with mlflow.start_run(run_name=run_name):
 
     history = initialise_history(outputs)
 
+    scale_evolution = pd.DataFrame(columns=ground_truth.features + ground_truth.outputs)
+    offset_evolution = pd.DataFrame(
+        columns=ground_truth.features + ground_truth.outputs
+    )
+
     for epoch in range(params["epochs"]):
         calibrated_model.to(device)
         try:
@@ -155,6 +162,9 @@ with mlflow.start_run(run_name=run_name):
                 history,
                 epoch,
             )
+            scale_evolution, offset_evolution = track_calibration(
+                calibrated_model, scale_evolution, offset_evolution
+            )
             best_weights, best_mse = update_best_weights(
                 calibrated_model, best_mse, best_weights, history
             )
@@ -182,6 +192,7 @@ with mlflow.start_run(run_name=run_name):
     plot_results(ground_truth, val_scans, model, calibrated_model)
 
     # log final values
-    mlflow.pytorch.log_model(calibrated_model.input_calibration, "input_calibration")
-    mlflow.pytorch.log_model(calibrated_model.output_calibration, "output_calibration")
+    # mlflow.pytorch.log_model(calibrated_model.input_calibration, "input_calibration")
+    # mlflow.pytorch.log_model(calibrated_model.output_calibration, "output_calibration")
     log_calibration_params(calibrated_model, ground_truth, filename="calibration")
+    log_evolution(scale_evolution, offset_evolution)
