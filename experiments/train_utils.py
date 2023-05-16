@@ -2,15 +2,16 @@ import json
 import tempfile
 from copy import deepcopy
 
-import mlflow
+import numpy as np
 import pandas as pd
 import torch
-from botorch.models.transforms.input import AffineInputTransform, InputTransform
+from botorch.models.transforms.input import AffineInputTransform
 from ground_truth import GroundTruth
-from lume_model.torch import LUMEModule, PyTorchModel
+from lume_model.torch import PyTorchModel
 from lume_model.utils import variables_from_yaml
 from modules import LUMEModuleTransposed, PVtoSimFactor
-from plot import plot_scans, plot_learned_parameters
+from plot import plot_scans
+from scipy.stats import truncnorm
 
 with open("configs/pv_info.json", "r") as f:
     pv_info = json.load(f)
@@ -81,32 +82,6 @@ def get_model(features, outputs):
     return model
 
 
-# def get_raw_data(save_dir, features, outputs):
-#     # this data has already been processed to remove the outliers, add default values and order the inputs
-#     train_df = pd.read_pickle(f"{save_dir}/train_df.pkl")
-#     val_df = pd.read_pickle(f"{save_dir}/val_df.pkl")
-#     test_df = pd.read_pickle(f"{save_dir}/test_df.pkl")
-
-#     # generate training data
-#     x_train_raw = torch.from_numpy(train_df[features].values)
-#     y_train_raw = torch.from_numpy(train_df[outputs].values)
-
-#     x_val_raw = torch.from_numpy(val_df[features].values)
-#     y_val_raw = torch.from_numpy(val_df[outputs].values)
-
-#     x_test_raw = torch.from_numpy(test_df[features].values)
-#     y_test_raw = torch.from_numpy(test_df[outputs].values)
-
-#     return (
-#         x_train_raw,
-#         y_train_raw,
-#         x_val_raw,
-#         y_val_raw,
-#         x_test_raw,
-#         y_test_raw,
-#     )
-
-
 def get_features():
     features = [
         pv_info["sim_name_to_pv_name"].get(sim_name, sim_name)
@@ -123,42 +98,6 @@ def get_outputs():
         if pv_info["sim_name_to_pv_name"].get(sim_name) in train_df.columns
     ]
     return outputs
-
-
-# def get_transformed_data(
-#     input_pv_to_sim,
-#     input_sim_to_nn,
-#     output_pv_to_sim,
-#     output_sim_to_nn,
-#     features,
-#     outputs,
-#     device="cpu",
-# ):
-#     # apply the conversions to generate our dataset
-#     (
-#         x_train_raw,
-#         y_train_raw,
-#         x_val_raw,
-#         y_val_raw,
-#         x_test_raw,
-#         y_test_raw,
-#     ) = get_raw_data("archive_data", features, outputs)
-#     x_train = input_sim_to_nn(input_pv_to_sim(x_train_raw)).to(device)
-#     y_train = output_sim_to_nn(output_pv_to_sim(y_train_raw)).to(device)
-
-#     x_val = input_sim_to_nn(input_pv_to_sim(x_val_raw)).to(device)
-#     y_val = output_sim_to_nn(output_pv_to_sim(y_val_raw)).to(device)
-
-#     x_test = input_sim_to_nn(input_pv_to_sim(x_test_raw)).to(device)
-#     y_test = output_sim_to_nn(output_pv_to_sim(y_test_raw)).to(device)
-#     return (
-#         x_train,
-#         y_train,
-#         x_val,
-#         y_val,
-#         x_test,
-#         y_test,
-#     )
 
 
 def get_features():
@@ -287,3 +226,8 @@ def update_best_weights(calibrated_model, best_mse, best_weights, history):
         best_mse = deepcopy(history["val"]["total"][-1])
         best_weights = deepcopy(calibrated_model.state_dict())
     return best_weights, best_mse
+
+
+def sample_truncated_normal(mean, std, lower, upper, n_samples) -> np.ndarray:
+    X = truncnorm((lower - mean) / std, (upper - mean) / std, loc=mean, scale=std)
+    return X.rvs(n_samples)

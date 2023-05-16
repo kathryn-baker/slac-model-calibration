@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+import numpy as np
 import torch
 from botorch.models.transforms.input import InputTransform
 from lume_model.torch import LUMEModule
@@ -33,12 +34,31 @@ class PVtoSimFactor(InputTransform, torch.nn.Module):
 class TrainableCalibrationLayer(torch.nn.Module):
     def __init__(self, dim, scale=1.0, offset=0.0, trainable=True):
         super().__init__()
-        self.scales = torch.nn.parameter.Parameter(
-            torch.full((dim,), scale), requires_grad=trainable
-        )
-        self.offsets = torch.nn.parameter.Parameter(
-            torch.full((dim,), offset), requires_grad=trainable
-        )
+        if isinstance(scale, float):
+            self.scales = torch.nn.parameter.Parameter(
+                torch.full((dim,), scale), requires_grad=trainable
+            )
+        elif isinstance(scale, np.ndarray):
+            self.scales = torch.nn.Parameter(
+                torch.from_numpy(scale), requires_grad=trainable
+            )
+        elif torch.is_tensor(scale):
+            self.scales = torch.nn.Parameter(scale, requires_grad=trainable)
+        else:
+            raise TypeError(f"Unknown type for scale: {type(scale)}")
+        # self.scales.requires_grad_(trainable)
+        if isinstance(scale, float):
+            self.offsets = torch.nn.parameter.Parameter(
+                torch.full((dim,), offset), requires_grad=trainable
+            )
+        elif isinstance(offset, np.ndarray):
+            self.offsets = torch.nn.Parameter(
+                torch.from_numpy(offset), requires_grad=trainable
+            )
+        elif torch.is_tensor(offset):
+            self.offsets = torch.nn.Parameter(offset, requires_grad=trainable)
+        else:
+            raise TypeError(f"Unknown type for offset: {type(offset)}")
 
     def forward(self, x):
         self.scales.to(x.device)

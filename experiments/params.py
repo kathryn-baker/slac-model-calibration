@@ -23,3 +23,9 @@ parser.add_argument(
     help="The activation function to use in a Linear calibration layer",
     type=str,
 )
+parser.add_argument(
+    "--n_repeats",
+    default=1,
+    help="The number of repeats to run training when using random initialisations",
+    type=int,
+)
