@@ -13,7 +13,9 @@ from lume_model.utils import variables_from_yaml
 from trainutils import get_pv_to_sim_transformers, get_sim_to_nn_transformers
 from xopt.vocs import VOCS
 
-save_dir = "artificial_data2"
+save_dir = "artificial_data4"
+
+np.random.seed(123)
 
 # define the VOCS for the PV data which will be used to generate the
 # training, val and test random inputs
@@ -41,15 +43,30 @@ vocs = VOCS(variables=variable_params, constants=constant_params, objectives=obj
 input_offsets = []
 input_scales = []
 for i, input_name in enumerate(input_variables.keys()):
-    if "SOL" in input_name:
+    if "SOL" in input_name and save_dir == "artificial_data3":
         scale = 1.5
         offset = -0.1
+    elif input_name in constant_params.keys():
+        scale = 1.0
+        offset = 0.0
+    elif save_dir == "artificial_data4":
+        scale = np.random.uniform(0.90, 1.10, 1)[0]
+        offset = np.random.uniform(-0.1, 0.1, 1)[0]
     else:
-        np.random.seed(i)
+        # np.random.seed(i)
         scale = np.random.uniform(0.99, 1.01, 1)[0]
         offset = np.random.uniform(-0.01, 0.01, 1)[0]
     input_offsets.append(offset)
     input_scales.append(scale)
+
+fig, ax = plt.subplots(2, 1)
+ax[0].bar(list(input_variables.keys()), input_offsets)
+ax[0].set_ylabel("offsets")
+ax[1].bar(list(input_variables.keys()), input_scales)
+ax[1].set_ylabel("scales")
+fig.tight_layout()
+plt.show()
+
 input_scales = torch.tensor(input_scales)
 input_offsets = torch.tensor(input_offsets)
 
@@ -60,7 +77,7 @@ output_offsets = []
 output_scales = []
 for i, output_name in enumerate(output_variables.keys()):
     if "OTR" in output_name:
-        np.random.seed(10 * i + 1)
+        # np.random.seed(10 * i + 1)
         scale = np.random.uniform(0.90, 1.1, 1)[0]
         offset = np.random.uniform(-0.05, 0.05, 1)[0]
     else:
@@ -74,7 +91,7 @@ torch.save(output_scales, f"{save_dir}/y_scales.pt")
 torch.save(output_offsets, f"{save_dir}/y_offsets.pt")
 
 
-class Calibration(torch.nn.Module):
+class Mismatch(torch.nn.Module):
     def __init__(self, scales: torch.Tensor, offsets: torch.Tensor) -> None:
         super().__init__()
         self._scales = scales
@@ -90,8 +107,8 @@ class Calibration(torch.nn.Module):
         return self.forward(x)
 
 
-input_calibration = Calibration(scales=input_scales, offsets=input_offsets)
-output_calibration = Calibration(scales=output_scales, offsets=output_offsets)
+input_mismatch = Mismatch(scales=input_scales, offsets=input_offsets)
+output_mismatch = Mismatch(scales=output_scales, offsets=output_offsets)
 
 
 with open("configs/model_info.json", "r") as f:
@@ -116,8 +133,8 @@ surrogate = PyTorchModel(
     "torch_model.pt",
     input_variables,
     output_variables,
-    input_transformers=[input_pv_to_sim, input_sim_to_nn, input_calibration],
-    output_transformers=[output_calibration, output_sim_to_nn, output_pv_to_sim],
+    input_transformers=[input_pv_to_sim, input_sim_to_nn, input_mismatch],
+    output_transformers=[output_mismatch, output_sim_to_nn, output_pv_to_sim],
 )
 
 # use the random inputs to build training, val and test dataframes of
@@ -129,7 +146,7 @@ for i, (dataset, points) in enumerate(zip(datasets, n_points)):
     timestamps = [
         init_time + timedelta(days=i, seconds=seconds) for seconds in range(points)
     ]
-    random_inputs = pd.DataFrame(vocs.random_inputs(n=points, seed=i * 21))
+    random_inputs = pd.DataFrame(vocs.random_inputs(n=points))  # , seed=i * 21))
     input_dict = {
         col_name: torch.from_numpy(random_inputs[col_name].values)
         for col_name in random_inputs.columns
@@ -152,7 +169,7 @@ for i, (dataset, points) in enumerate(zip(datasets, n_points)):
 # varying the known quad we're looking for)
 n_scans = 3
 for scan_no in range(n_scans):
-    random_inputs = vocs.random_inputs(seed=456 * scan_no)
+    random_inputs = vocs.random_inputs()  # seed=456 * scan_no)
     quad = "QUAD:IN20:525:BACT"
     random_inputs[quad] = np.linspace(-7, -1, 10)
 
@@ -173,7 +190,7 @@ for scan_no in range(n_scans):
 
     fig, ax = plt.subplots()
     ax.plot(data[quad], data["OTRS:IN20:571:XRMS"], marker=".", label="XRMS")
-    ax.plot(data[quad], data["OTRS:IN20:571:YRMS"], marker=".", label="XRMS")
+    ax.plot(data[quad], data["OTRS:IN20:571:YRMS"], marker=".", label="YRMS")
     ax.legend()
     ax.set_xlabel(quad)
     ax.set_ylabel("OTRS:IN20:571")

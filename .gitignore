@@ -1,5 +1,6 @@
 data/
 archive_data/
+artificial_data*/
 archive_data/*.pkl
 
 __pycache__/
