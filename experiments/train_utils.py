@@ -20,32 +20,6 @@ with open("configs/normalization.json", "r") as f:
     norm_data = json.load(f)
 
 
-def get_experiment_name(args):
-    if args.epochs == 10:
-        experiment_name = "test"
-    elif args.data_source == "archive_data":
-        experiment_name = "injector_calibration"
-    else:
-        experiment_name = (
-            f"injector_calibration_{args.data_source.replace('_data', '')}"
-        )
-    print(experiment_name)
-    return experiment_name
-
-
-def get_restricted_range(args):
-    if args.data_source == "archive_data":
-        restricted_range = ["2021-11-01", "2021-12-01"]
-    else:
-        restricted_range = None
-    return restricted_range
-
-
-def get_run_name(filename):
-    run_name = filename.replace("\\", "/").split("/")[-1][:-3]
-    return run_name
-
-
 def get_sim_to_nn_transformers(output_indices):
     input_scale = torch.tensor(norm_data["x_scale"], dtype=torch.double)
     input_min_val = torch.tensor(norm_data["x_min"], dtype=torch.double)
@@ -107,84 +81,30 @@ def get_model(features, outputs):
     return model
 
 
-def get_raw_data(save_dir, features, outputs):
-    # this data has already been processed to remove the outliers, add default values and order the inputs
-    train_df = pd.read_pickle(f"{save_dir}/train_df.pkl")
-    val_df = pd.read_pickle(f"{save_dir}/val_df.pkl")
-    test_df = pd.read_pickle(f"{save_dir}/test_df.pkl")
+# def get_raw_data(save_dir, features, outputs):
+#     # this data has already been processed to remove the outliers, add default values and order the inputs
+#     train_df = pd.read_pickle(f"{save_dir}/train_df.pkl")
+#     val_df = pd.read_pickle(f"{save_dir}/val_df.pkl")
+#     test_df = pd.read_pickle(f"{save_dir}/test_df.pkl")
 
-    # generate training data
-    x_train_raw = torch.from_numpy(train_df[features].values)
-    y_train_raw = torch.from_numpy(train_df[outputs].values)
+#     # generate training data
+#     x_train_raw = torch.from_numpy(train_df[features].values)
+#     y_train_raw = torch.from_numpy(train_df[outputs].values)
 
-    x_val_raw = torch.from_numpy(val_df[features].values)
-    y_val_raw = torch.from_numpy(val_df[outputs].values)
+#     x_val_raw = torch.from_numpy(val_df[features].values)
+#     y_val_raw = torch.from_numpy(val_df[outputs].values)
 
-    x_test_raw = torch.from_numpy(test_df[features].values)
-    y_test_raw = torch.from_numpy(test_df[outputs].values)
+#     x_test_raw = torch.from_numpy(test_df[features].values)
+#     y_test_raw = torch.from_numpy(test_df[outputs].values)
 
-    return (
-        x_train_raw,
-        y_train_raw,
-        x_val_raw,
-        y_val_raw,
-        x_test_raw,
-        y_test_raw,
-    )
-
-
-def get_features():
-    features = [
-        pv_info["sim_name_to_pv_name"].get(sim_name, sim_name)
-        for sim_name in model_info["model_in_list"]
-    ]
-    return features
-
-
-def get_outputs():
-    train_df = pd.read_pickle("archive_data/train_df.pkl")
-    outputs = [
-        pv_info["sim_name_to_pv_name"].get(sim_name)
-        for sim_name in model_info["model_out_list"]
-        if pv_info["sim_name_to_pv_name"].get(sim_name) in train_df.columns
-    ]
-    return outputs
-
-
-def get_transformed_data(
-    input_pv_to_sim,
-    input_sim_to_nn,
-    output_pv_to_sim,
-    output_sim_to_nn,
-    features,
-    outputs,
-    device="cpu",
-):
-    # apply the conversions to generate our dataset
-    (
-        x_train_raw,
-        y_train_raw,
-        x_val_raw,
-        y_val_raw,
-        x_test_raw,
-        y_test_raw,
-    ) = get_raw_data("archive_data", features, outputs)
-    x_train = input_sim_to_nn(input_pv_to_sim(x_train_raw)).to(device)
-    y_train = output_sim_to_nn(output_pv_to_sim(y_train_raw)).to(device)
-
-    x_val = input_sim_to_nn(input_pv_to_sim(x_val_raw)).to(device)
-    y_val = output_sim_to_nn(output_pv_to_sim(y_val_raw)).to(device)
-
-    x_test = input_sim_to_nn(input_pv_to_sim(x_test_raw)).to(device)
-    y_test = output_sim_to_nn(output_pv_to_sim(y_test_raw)).to(device)
-    return (
-        x_train,
-        y_train,
-        x_val,
-        y_val,
-        x_test,
-        y_test,
-    )
+#     return (
+#         x_train_raw,
+#         y_train_raw,
+#         x_val_raw,
+#         y_val_raw,
+#         x_test_raw,
+#         y_test_raw,
+#     )
 
 
 def get_features():
@@ -205,14 +125,58 @@ def get_outputs():
     return outputs
 
 
-def log_history(history, epoch):
-    # log metrics to mlflow
-    for stage in ["train", "val"]:
-        for output, output_history in history[stage].items():
-            output_name = output.split(":")[-1]
-            mlflow.log_metric(f"{stage}_{output_name}", output_history[-1], step=epoch)
+# def get_transformed_data(
+#     input_pv_to_sim,
+#     input_sim_to_nn,
+#     output_pv_to_sim,
+#     output_sim_to_nn,
+#     features,
+#     outputs,
+#     device="cpu",
+# ):
+#     # apply the conversions to generate our dataset
+#     (
+#         x_train_raw,
+#         y_train_raw,
+#         x_val_raw,
+#         y_val_raw,
+#         x_test_raw,
+#         y_test_raw,
+#     ) = get_raw_data("archive_data", features, outputs)
+#     x_train = input_sim_to_nn(input_pv_to_sim(x_train_raw)).to(device)
+#     y_train = output_sim_to_nn(output_pv_to_sim(y_train_raw)).to(device)
 
-    mlflow.log_metric("lr", history["lr"][-1], step=epoch)
+#     x_val = input_sim_to_nn(input_pv_to_sim(x_val_raw)).to(device)
+#     y_val = output_sim_to_nn(output_pv_to_sim(y_val_raw)).to(device)
+
+#     x_test = input_sim_to_nn(input_pv_to_sim(x_test_raw)).to(device)
+#     y_test = output_sim_to_nn(output_pv_to_sim(y_test_raw)).to(device)
+#     return (
+#         x_train,
+#         y_train,
+#         x_val,
+#         y_val,
+#         x_test,
+#         y_test,
+#     )
+
+
+def get_features():
+    features = [
+        pv_info["sim_name_to_pv_name"].get(sim_name, sim_name)
+        for sim_name in model_info["model_in_list"]
+    ]
+    return features
+
+
+def get_outputs():
+    train_df = pd.read_pickle("archive_data/train_df.pkl")
+    outputs = [
+        pv_info["sim_name_to_pv_name"].get(sim_name)
+        for sim_name in model_info["model_out_list"]
+        if pv_info["sim_name_to_pv_name"].get(sim_name) in train_df.columns
+    ]
+    return outputs
 
 
 def model_state_unchanged(original_model, updated_model):
@@ -291,7 +255,7 @@ def print_progress(
             )
 
 
-def track_calibration(
+def update_calibration(
     calibrated_model, scale_evolution: pd.DataFrame, offset_evolution: pd.DataFrame
 ):
     scale_evolution.loc[len(scale_evolution)] = (
@@ -315,81 +279,6 @@ def track_calibration(
         .numpy()
     )
     return scale_evolution, offset_evolution
-
-
-def log_evolution(scale_evolution, offset_evolution):
-    for param, evolution in zip(
-        ["scales", "offsets"], [scale_evolution, offset_evolution]
-    ):
-        with tempfile.TemporaryDirectory() as tempdir:
-            filepath = f"{tempdir}/{param}_evolution"
-            evolution.to_csv(f"{filepath}.csv")
-            mlflow.log_artifact(f"{filepath}.csv")
-
-
-def log_calibration_params(
-    model,
-    ground_truth: GroundTruth,
-    filename="calibration",
-):
-    calibration = pd.DataFrame()
-    calibration["parameters"] = ground_truth.features + ground_truth.outputs
-    calibration["scales_learned"] = (
-        torch.cat([model.input_calibration.scales, model.output_calibration.scales])
-        .detach()
-        .numpy()
-    )
-    calibration["offsets_learned"] = (
-        torch.cat([model.input_calibration.offsets, model.output_calibration.offsets])
-        .detach()
-        .numpy()
-    )
-    if ground_truth.input_scales is not None and ground_truth.output_scales is not None:
-        calibration["scales_true"] = (
-            torch.cat(
-                [
-                    ground_truth.input_scales,
-                    ground_truth.output_scales[0 : len(ground_truth.outputs)],
-                ]
-            )
-            .detach()
-            .numpy()
-        )
-    if (
-        ground_truth.input_offsets is not None
-        and ground_truth.output_offsets is not None
-    ):
-        calibration["offsets_true"] = (
-            torch.cat(
-                [
-                    ground_truth.input_offsets,
-                    ground_truth.output_offsets[0 : len(ground_truth.outputs)],
-                ]
-            )
-            .detach()
-            .numpy()
-        )
-    calibration = calibration[sorted(calibration.columns)]
-    calibration = calibration.set_index("parameters")
-    calibration = calibration.round(4)
-    with tempfile.TemporaryDirectory() as tempdir:
-        filepath = f"{tempdir}/{filename}"
-        calibration.to_csv(f"{filepath}.csv")
-        mlflow.log_artifact(f"{filepath}.csv")
-    try:
-        plot_learned_parameters(calibration, save_name="learned_calibration")
-    except KeyError:
-        pass
-
-
-def get_device_and_batch_size():
-    if torch.cuda.is_available():
-        device = "cuda"
-        batch_size = 64 * 4
-    else:
-        device = "cpu"
-        batch_size = 64
-    return device, batch_size
 
 
 def update_best_weights(calibrated_model, best_mse, best_weights, history):

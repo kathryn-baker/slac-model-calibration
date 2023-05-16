@@ -11,30 +11,34 @@ from callbacks import EarlyStopping
 from ground_truth import GroundTruth
 from modules import CalibratedLCLS, TrainableCalibrationLayer
 from params import parser
-from plot import plot_feature_histogram, plot_results
-from trainutils import (
+from mlflow_utils import (
     get_device_and_batch_size,
     get_experiment_name,
+    get_restricted_range,
+    get_run_name,
+    log_calibration_params,
+    log_evolution,
+    log_history,
+)
+
+from plot import plot_feature_histogram, plot_results
+from train_utils import (
     get_features,
     get_model,
     get_outputs,
     get_pv_to_sim_transformers,
-    get_restricted_range,
-    get_run_name,
     get_sim_to_nn_transformers,
     initialise_history,
-    log_calibration_params,
-    log_evolution,
-    log_history,
     model_info,
     model_state_unchanged,
     print_progress,
     pv_info,
     test_step,
-    track_calibration,
     train_step,
     update_best_weights,
+    update_calibration,
 )
+
 
 args = parser.parse_args()
 experiment_name = get_experiment_name(args)
@@ -182,7 +186,7 @@ with mlflow.start_run(run_name=run_name):
                         history,
                         epoch,
                     )
-                    scale_evolution, offset_evolution = track_calibration(
+                    scale_evolution, offset_evolution = update_calibration(
                         calibrated_model, scale_evolution, offset_evolution
                     )
 
