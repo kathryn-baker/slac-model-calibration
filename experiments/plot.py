@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import torch
 from ground_truth import GroundTruth
 from plotly.subplots import make_subplots
+import seaborn as sns
 from sklearn.metrics import mean_squared_error
 
 colors = plt.get_cmap("tab10")
@@ -39,19 +40,59 @@ def prediction_as_dataframe(ground_truth: GroundTruth, model, data):
 
 
 def plot_feature_histogram(
-    x_data_raw, input_pv_to_sim, model_info, save_name="feature_histogram"
+    ground_truth: GroundTruth,
+    input_pv_to_sim,
+    model_info,
+    save_name="feature_histogram",
 ):
     n_cols, n_rows = 4, 4
-    fig, ax = plt.subplots(n_rows, n_cols, figsize=(3 * n_cols, 3 * n_rows))
+    fig, ax = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 4 * n_rows))
     ax = ax.ravel()
 
-    sim_data = input_pv_to_sim(x_data_raw).cpu()
+    sim_data = input_pv_to_sim(ground_truth.x_val_raw).cpu()
+
+    # if we know what the true calibrations are, we also want to plot the histograms
+    # of the data after it's passed through the calibration layers
+    if ground_truth.input_scales is not None:
+        scaled_data = ground_truth.input_scales * (
+            ground_truth.input_offsets + ground_truth.x_val.cpu()
+        )
+        scaled_sim_data = ground_truth.input_sim_to_nn.untransform(scaled_data).cpu()
 
     for feature_no, feature_name in enumerate(model_info["model_in_list"]):
         lb = model_info["train_input_mins"][feature_no]
         ub = model_info["train_input_maxs"][feature_no]
         title = f"{feature_name}\nmin {lb:.3f} | max {ub:.3f}"
-        ax[feature_no].hist(sim_data[:, feature_no])
+        sns.kdeplot(
+            sim_data[:, feature_no],
+            ax=ax[feature_no],
+            color="tab:blue",
+            warn_singular=False,
+            # label=f"{sim_data[:, feature_no].mean().item():.4f}",
+        )
+        ax[feature_no].hist(
+            sim_data[:, feature_no],
+            alpha=0.5,
+            label=f"{sim_data[:, feature_no].mean().item():.4f}",
+            color="tab:blue",
+            density=True,
+        )
+        if ground_truth.input_scales is not None:
+            ax[feature_no].hist(
+                scaled_sim_data[:, feature_no],
+                alpha=0.5,
+                label=f"{scaled_sim_data[:, feature_no].mean().item():.4f}",
+                color="tab:orange",
+                density=True,
+            )
+            sns.kdeplot(
+                scaled_sim_data[:, feature_no],
+                ax=ax[feature_no],
+                color="tab:orange",
+                warn_singular=False,
+                # label=f"{scaled_sim_data[:, feature_no].mean().item():.4f}",
+            )
+            ax[feature_no].legend()
         ax[feature_no].set_title(title)
 
     fig.tight_layout()

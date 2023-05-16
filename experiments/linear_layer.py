@@ -88,7 +88,7 @@ with mlflow.start_run(run_name=run_name):
         pd.read_pickle(filename)
         for filename in glob.glob(f"{args.data_source}/val_scan_*.pkl")
     ]
-    plot_feature_histogram(ground_truth.x_val_raw, input_pv_to_sim, model_info)
+    plot_feature_histogram(ground_truth, input_pv_to_sim, model_info)
 
     model = get_model(features, outputs)
 
