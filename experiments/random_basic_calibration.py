@@ -10,7 +10,7 @@ import torch
 from callbacks import EarlyStopping
 from ground_truth import GroundTruth
 from mlflow_utils import (
-    get_device_and_batch_size,
+    get_device,
     get_experiment_name,
     get_restricted_range,
     get_run_name,
@@ -18,7 +18,7 @@ from mlflow_utils import (
     log_evolution,
     log_history,
 )
-from modules import CalibratedLCLS, TrainableCalibrationLayer
+from modules import CalibratedLCLS, DecoupledCalibration
 from params import parser
 from plot import plot_feature_histogram, plot_results
 from train_utils import (
@@ -43,7 +43,7 @@ args = parser.parse_args()
 
 experiment_name = get_experiment_name(args)
 restricted_range = get_restricted_range(args)
-device, batch_size = get_device_and_batch_size()
+device, batch_size = get_device()
 
 
 mlflow.set_experiment(f"{experiment_name}_{device}")
@@ -117,7 +117,7 @@ with mlflow.start_run(run_name=run_name):
                 n_samples=len(model.feature_order),
             )
             print(f"Initial input parameters:\n{input_scale}\n{input_offset}\n")
-            input_calibration = TrainableCalibrationLayer(
+            input_calibration = DecoupledCalibration(
                 len(model.feature_order),
                 scale=input_scale,
                 offset=input_offset,
@@ -139,7 +139,7 @@ with mlflow.start_run(run_name=run_name):
                 n_samples=len(model.output_order),
             )
             print(f"Initial output parameters:\n{output_scale}\n{output_offset}\n")
-            output_calibration = TrainableCalibrationLayer(
+            output_calibration = DecoupledCalibration(
                 len(model.output_order),
                 scale=output_scale,
                 offset=output_offset,

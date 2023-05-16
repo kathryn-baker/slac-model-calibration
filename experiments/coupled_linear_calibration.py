@@ -9,10 +9,10 @@ import pandas as pd
 import torch
 from callbacks import EarlyStopping
 from ground_truth import GroundTruth
-from modules import CalibratedLCLS, LinearCalibrationLayer
+from modules import CalibratedLCLS, CoupledCalibration
 from params import parser
 from mlflow_utils import (
-    get_device_and_batch_size,
+    get_device,
     get_experiment_name,
     get_restricted_range,
     get_run_name,
@@ -39,20 +39,20 @@ from train_utils import (
 args = parser.parse_args()
 
 
-experiment_name = get_experiment_name(args)
+# experiment_name = get_experiment_name(args)
 restricted_range = get_restricted_range(args)
 
-device, batch_size = get_device_and_batch_size()
+device = get_device()
 
 
-mlflow.set_experiment(f"{experiment_name}_{device}")
+mlflow.set_experiment(f"{args.experiment_name}")
 
 
 run_name = get_run_name(__file__)
 with mlflow.start_run(run_name=run_name):
     params = {
         "epochs": args.epochs,
-        "batch_size": batch_size,
+        "batch_size": args.batch_size,
         "device": device,
         "lr": args.learning_rate,
         "optimizer": "Adam",
@@ -95,10 +95,10 @@ with mlflow.start_run(run_name=run_name):
 
     train_dataset = torch.utils.data.TensorDataset(x_train, y_train)
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True
+        train_dataset, batch_size=args.batch_size, shuffle=True
     )
 
-    input_calibration = LinearCalibrationLayer(
+    input_calibration = CoupledCalibration(
         shape_in=len(model.feature_order),
         shape_out=len(model.feature_order),
         device=device,
@@ -106,7 +106,7 @@ with mlflow.start_run(run_name=run_name):
         activation=params["activation"],
     )
 
-    output_calibration = LinearCalibrationLayer(
+    output_calibration = CoupledCalibration(
         shape_in=len(model.output_order),
         shape_out=len(model.output_order),
         device=device,

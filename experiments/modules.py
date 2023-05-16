@@ -31,39 +31,36 @@ class PVtoSimFactor(InputTransform, torch.nn.Module):
         return x / self._conversion
 
 
-class TrainableCalibrationLayer(torch.nn.Module):
-    def __init__(self, dim, scale=1.0, offset=0.0, trainable=True):
+class DecoupledCalibration(torch.nn.Module):
+    def __init__(self, dim, scale=1.0, offset=0.0, trainable=True, activation="none"):
         super().__init__()
         if isinstance(scale, float):
-            self.scales = torch.nn.parameter.Parameter(
-                torch.full((dim,), scale), requires_grad=trainable
-            )
+            scales = torch.full((dim,), scale)
         elif isinstance(scale, np.ndarray):
-            self.scales = torch.nn.Parameter(
-                torch.from_numpy(scale), requires_grad=trainable
-            )
+            scales = torch.from_numpy(scale)
         elif torch.is_tensor(scale):
-            self.scales = torch.nn.Parameter(scale, requires_grad=trainable)
+            scales = scale
         else:
             raise TypeError(f"Unknown type for scale: {type(scale)}")
-        # self.scales.requires_grad_(trainable)
-        if isinstance(scale, float):
-            self.offsets = torch.nn.parameter.Parameter(
-                torch.full((dim,), offset), requires_grad=trainable
-            )
+        self.scales = torch.nn.Parameter(scales, requires_grad=trainable)
+        if isinstance(offset, float):
+            offsets = torch.full((dim,), offset)
         elif isinstance(offset, np.ndarray):
-            self.offsets = torch.nn.Parameter(
-                torch.from_numpy(offset), requires_grad=trainable
-            )
+            offsets = torch.from_numpy(offset)
         elif torch.is_tensor(offset):
-            self.offsets = torch.nn.Parameter(offset, requires_grad=trainable)
+            offsets = offset
         else:
             raise TypeError(f"Unknown type for offset: {type(offset)}")
+        self.offsets = torch.nn.Parameter(offsets, requires_grad=trainable)
+        self.activation = activation_functions[activation]
 
     def forward(self, x):
         self.scales.to(x.device)
         self.offsets.to(x.device)
         x = self.scales * (x + self.offsets)
+        if self.activation is not None:
+            self.activation.to(x)
+            x = self.activation(x)
         return x
 
 
@@ -86,7 +83,7 @@ class CalibratedLCLS(torch.nn.Module):
             return x
 
 
-class LinearCalibrationLayer(torch.nn.Module):
+class CoupledCalibration(torch.nn.Module):
     def __init__(
         self,
         shape_in,

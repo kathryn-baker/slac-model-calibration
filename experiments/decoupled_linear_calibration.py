@@ -10,7 +10,7 @@ import torch
 from callbacks import EarlyStopping
 from ground_truth import GroundTruth
 from mlflow_utils import (
-    get_device_and_batch_size,
+    get_device,
     get_experiment_name,
     get_restricted_range,
     get_run_name,
@@ -18,7 +18,7 @@ from mlflow_utils import (
     log_evolution,
     log_history,
 )
-from modules import CalibratedLCLS, TrainableCalibrationLayer
+from modules import CalibratedLCLS, DecoupledCalibration
 from params import parser
 from plot import plot_feature_histogram, plot_results
 from train_utils import (
@@ -40,12 +40,11 @@ from train_utils import (
 
 args = parser.parse_args()
 
-experiment_name = get_experiment_name(args)
 restricted_range = get_restricted_range(args)
-device, batch_size = get_device_and_batch_size()
+device = get_device()
 
 
-mlflow.set_experiment(f"{experiment_name}_{device}")
+mlflow.set_experiment(args.experiment_name)
 
 
 run_name = get_run_name(__file__)
@@ -53,10 +52,11 @@ run_name = get_run_name(__file__)
 with mlflow.start_run(run_name=run_name):
     params = {
         "epochs": args.epochs,
-        "batch_size": batch_size,
+        "batch_size": args.batch_size,
         "device": device,
         "optimizer": "Adam",
         "lr": args.learning_rate,
+        "dataset": args.data_source,
     }
 
     mlflow.log_params(params)
@@ -94,14 +94,22 @@ with mlflow.start_run(run_name=run_name):
 
     train_dataset = torch.utils.data.TensorDataset(x_train, y_train)
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True
+        train_dataset, batch_size=args.batch_size, shuffle=True
     )
     # plot_scans(val_scans, ground_truth, models=[model], save_name="scan_model")
-    input_calibration = TrainableCalibrationLayer(
-        len(model.feature_order), scale=1.0, offset=1e-6, trainable=True
+    input_calibration = DecoupledCalibration(
+        len(model.feature_order),
+        scale=1.0,
+        offset=1e-6,
+        trainable=True,
+        activation=args.activation,
     ).to(device)
-    output_calibration = TrainableCalibrationLayer(
-        len(model.output_order), scale=1.0, offset=1e-6, trainable=True
+    output_calibration = DecoupledCalibration(
+        len(model.output_order),
+        scale=1.0,
+        offset=1e-6,
+        trainable=True,
+        activation=args.activation,
     ).to(device)
 
     # look at the pytorch model within the LUMEModule within the PyTorchModel

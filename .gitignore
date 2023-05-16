@@ -1,7 +1,9 @@
 data/
 archive_data/
 artificial_data*/
-archive_data/*.pkl
+random*/
+solenoid*/
+# archive_data/*.pkl
 
 __pycache__/
 mlruns/

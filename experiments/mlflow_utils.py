@@ -90,14 +90,12 @@ def log_calibration_params(
         pass
 
 
-def get_device_and_batch_size():
+def get_device():
     if torch.cuda.is_available():
         device = "cuda"
-        batch_size = 64 * 4
     else:
         device = "cpu"
-        batch_size = 64
-    return device, batch_size
+    return device
 
 
 def log_evolution(scale_evolution, offset_evolution):

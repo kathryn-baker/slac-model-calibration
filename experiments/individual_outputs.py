@@ -9,10 +9,10 @@ import pandas as pd
 import torch
 from callbacks import EarlyStopping
 from ground_truth import GroundTruth
-from modules import CalibratedLCLS, TrainableCalibrationLayer
+from modules import CalibratedLCLS, DecoupledCalibration
 from params import parser
 from mlflow_utils import (
-    get_device_and_batch_size,
+    get_device,
     get_experiment_name,
     get_restricted_range,
     get_run_name,
@@ -44,7 +44,7 @@ args = parser.parse_args()
 experiment_name = get_experiment_name(args)
 restricted_range = get_restricted_range(args)
 
-device, batch_size = get_device_and_batch_size()
+device, batch_size = get_device()
 
 
 mlflow.set_experiment(f"{experiment_name}_{device}")
@@ -114,10 +114,10 @@ with mlflow.start_run(run_name=run_name):
             )
 
             # build calibration models
-            input_calibration = TrainableCalibrationLayer(
+            input_calibration = DecoupledCalibration(
                 len(model.feature_order), scale=1.0, offset=1e-6, trainable=True
             ).to(device)
-            output_calibration = TrainableCalibrationLayer(
+            output_calibration = DecoupledCalibration(
                 len(model.output_order), scale=1.0, offset=1e-6, trainable=True
             ).to(device)
 
