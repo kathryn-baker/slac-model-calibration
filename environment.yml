@@ -9,3 +9,7 @@ dependencies:
   - lume-model
   - numpy
   - plotly
+  - seaborn
+  - pip
+  - pip:
+      - torchensemble
