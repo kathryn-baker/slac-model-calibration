@@ -1,0 +1,3 @@
+# python experiments/decoupled_linear_calibration.py --epochs 20000 --data_source solenoid_wo_constants --learning_rate 1e-5 --batch_size 64 --experiment_name compare_techniques # we know this one works
+python experiments/decoupled_linear_calibration.py --epochs 50000 --data_source solenoid_wo_constants --learning_rate 1e-5 --batch_size 64 --experiment_name compare_techniques --activation tanh
+python experiments/coupled_linear_calibration.py --epochs 50000 --data_source solenoid_wo_constants --learning_rate 1e-5 --batch_size 64 --experiment_name compare_techniques --activation tanh

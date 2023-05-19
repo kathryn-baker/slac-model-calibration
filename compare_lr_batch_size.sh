@@ -1,0 +1,6 @@
+python experiments/decoupled_linear_calibration.py --epochs 20000 --data_source solenoid_wo_constants --learning_rate 1e-5 --batch_size 256 --experiment_name compare_lr_batch # we know this one works
+python experiments/decoupled_linear_calibration.py --epochs 20000 --data_source solenoid_wo_constants --learning_rate 1e-5 --batch_size 64 --experiment_name compare_lr_batch
+python experiments/decoupled_linear_calibration.py --epochs 20000 --data_source solenoid_wo_constants --learning_rate 1e-5 --batch_size 32 --experiment_name compare_lr_batch
+python experiments/decoupled_linear_calibration.py --epochs 20000 --data_source solenoid_wo_constants --learning_rate 1e-6 --batch_size 256 --experiment_name compare_lr_batch
+python experiments/decoupled_linear_calibration.py --epochs 20000 --data_source solenoid_wo_constants --learning_rate 1e-6 --batch_size 64 --experiment_name compare_lr_batch
+python experiments/decoupled_linear_calibration.py --epochs 20000 --data_source solenoid_wo_constants --learning_rate 1e-6 --batch_size 32 --experiment_name compare_lr_batch
