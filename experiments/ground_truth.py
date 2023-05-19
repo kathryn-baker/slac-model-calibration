@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import torch
+import glob
 
 
 class GroundTruth:
@@ -59,6 +60,11 @@ class GroundTruth:
             self.input_offsets = None
             self.output_scales = None
             self.output_offsets = None
+
+        self.val_scans = [
+            pd.read_pickle(filename)
+            for filename in glob.glob(f"{data_dir}/val_scan_*.pkl")
+        ]
 
     @property
     def x_train(self):

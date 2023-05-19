@@ -204,6 +204,7 @@ def update_calibration(
                 calibrated_model.output_calibration.scales,
             ]
         )
+        .cpu()
         .detach()
         .numpy()
     )
@@ -214,6 +215,7 @@ def update_calibration(
                 calibrated_model.output_calibration.offsets,
             ]
         )
+        .cpu()
         .detach()
         .numpy()
     )
